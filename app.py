@@ -15,7 +15,6 @@ import warnings
 
 warnings.filterwarnings('ignore')
 
-# Настройка страницы
 st.set_page_config(
     page_title="🐕 Дашборд анализа здоровья собак",
     page_icon="🐕",
@@ -23,7 +22,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Пользовательские стили
 st.markdown("""
 <style>
     .main-header {
@@ -64,93 +62,90 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Заголовок
 st.markdown('<h1 class="main-header">🐕 Дашборд анализа здоровья собак</h1>', unsafe_allow_html=True)
 
-# Создание синтетических данных (расширенная версия)
+breed_translation = {
+    'Labrador Retriever': 'Лабрадор-ретривер',
+    'German Shepherd': 'Немецкая овчарка',
+    'Golden Retriever': 'Золотистый ретривер',
+    'Bulldog': 'Бульдог',
+    'Beagle': 'Бигль',
+    'Poodle': 'Пудель',
+    'Rottweiler': 'Ротвейлер',
+    'Yorkshire Terrier': 'Йоркширский терьер',
+    'Boxer': 'Боксер',
+    'Dachshund': 'Такса',
+}
+
+sex_translation = {
+    'Male': 'Самец',
+    'Female': 'Самка',
+    'Unknown': 'Неизвестно'
+}
+
+size_translation = {
+    'Small': 'Маленький',
+    'Medium': 'Средний',
+    'Large': 'Большой',
+    'Unknown': 'Неизвестно'
+}
+
+activity_translation = {
+    'Low': 'Низкий',
+    'Moderate': 'Умеренный',
+    'High': 'Высокий',
+    'Unknown': 'Неизвестно'
+}
+
+diet_translation = {
+    'Dry Food': 'Сухой корм',
+    'Wet Food': 'Влажный корм',
+    'Raw': 'Сырое питание',
+    'Unknown': 'Неизвестно'
+}
+
+spay_translation = {
+    'Spayed/Neutered': 'Кастрирован',
+    'Intact': 'Не кастрирован',
+    'Unknown': 'Неизвестно'
+}
+
 @st.cache_data
-def generate_dog_data():
-    np.random.seed(42)
+def load_data():
+    df = pd.read_csv('data/synthetic_dog_breed_health_data.csv')
+    df['Weight (kg)'] = df['Weight (lbs)'] * 0.453592
+    df = df.rename(columns={
+        'Breed': 'Порода',
+        'Breed Size': 'Размер породы',
+        'Sex': 'Пол',
+        'Age': 'Возраст',
+        'Weight (kg)': 'Вес (кг)',
+        'Daily Activity Level': 'Уровень активности',
+        'Diet': 'Диета',
+        'Spay/Neuter Status': 'Статус кастрации',
+        'Annual Vet Visits': 'Посещений ветеринара в год',
+        'Healthy': 'Здоров'
+    })
+    df['Порода'] = df['Порода'].map(breed_translation).fillna('Неизвестно')
+    df['Пол'] = df['Пол'].map(sex_translation).fillna('Неизвестно')
+    df['Размер породы'] = df['Размер породы'].map(size_translation).fillna('Неизвестно')
+    df['Уровень активности'] = df['Уровень активности'].map(activity_translation).fillna('Неизвестно')
+    df['Диета'] = df['Диета'].map(diet_translation).fillna('Неизвестно')
+    df['Статус кастрации'] = df['Статус кастрации'].map(spay_translation).fillna('Неизвестно')
+    df['Здоров'] = df['Здоров'].map({'Yes': 'Да', 'No': 'Нет'})
+    df['Порода'] = df['Порода'].fillna('Неизвестно')
+    df['Размер породы'] = df['Размер породы'].fillna('Неизвестно')
+    df['Пол'] = df['Пол'].fillna('Неизвестно')
+    df['Уровень активности'] = df['Уровень активности'].fillna('Неизвестно')
+    df['Диета'] = df['Диета'].fillna('Неизвестно')
+    df['Статус кастрации'] = df['Статус кастрации'].fillna('Неизвестно')
+    return df
 
-    breeds = ["Австралийская овчарка", "Такса", "Чихуахуа", "Сибирская хаски", "Боксер",
-              "Лабрадор-ретривер", "Бульдог", "Золотистый ретривер", "Немецкая овчарка", "Пудель"]
-    breed_sizes = ["Маленький", "Средний", "Крупный"]
-    sexes = ["Самец", "Самка"]
-    activity_levels = ["Отсутствует", "Низкая", "Умеренная", "Активная", "Очень активная"]
-    diets = ["Сухой корм", "Влажный корм", "Домашняя еда", "Специальная диета", "Сырая диета"]
-    spay_neuter = ["Не кастрирован", "Кастрирован", "Стерилизована"]
+df = load_data()
 
-    data = []
-    for i in range(1000):
-        breed = np.random.choice(breeds)
-        size = np.random.choice(breed_sizes) if np.random.random() > 0.05 else None
-        sex = np.random.choice(sexes)
-        age = np.random.normal(7, 3)
-        age = max(1, min(18, age))
-
-        # Вес зависит от размера породы
-        if size == "Маленький":
-            weight = np.random.normal(7, 4)  # перевод в кг
-        elif size == "Средний":
-            weight = np.random.normal(20, 7)
-        elif size == "Крупный":
-            weight = np.random.normal(32, 9)
-        else:
-            weight = np.random.normal(20, 11)
-
-        weight = max(2.3, weight) if np.random.random() > 0.03 else None
-
-        activity = np.random.choice(activity_levels)
-        diet = np.random.choice(diets) if np.random.random() > 0.05 else None
-        spay_neuter_status = np.random.choice(spay_neuter)
-        vet_visits = np.random.poisson(1.5)
-
-        # Логика для определения здоровья
-        health_score = 0
-        if age < 2:
-            health_score += 20
-        elif age < 8:
-            health_score += 30
-        else:
-            health_score += 10
-
-        if activity in ["Активная", "Очень активная"]:
-            health_score += 25
-        elif activity == "Умеренная":
-            health_score += 15
-        elif activity == "Низкая":
-            health_score += 5
-
-        if vet_visits >= 1: health_score += 20
-        if spay_neuter_status in ["Кастрирован", "Стерилизована"]: health_score += 15
-        if diet in ["Домашняя еда", "Специальная диета"]: health_score += 10
-
-        healthy = "Да" if health_score + np.random.normal(0, 15) > 50 else "Нет"
-        if np.random.random() < 0.02: healthy = None
-
-        data.append({
-            "Порода": breed,
-            "Размер породы": size,
-            "Пол": sex,
-            "Возраст": round(age, 1),
-            "Вес (кг)": round(weight, 1) if weight else None,
-            "Уровень активности": activity,
-            "Диета": diet,
-            "Статус кастрации": spay_neuter_status,
-            "Посещений ветеринара в год": vet_visits,
-            "Здоров": healthy
-        })
-
-    return pd.DataFrame(data)
-
-# Загрузка данных
-df = generate_dog_data()
-
-# Боковая панель
 st.sidebar.markdown("## 🎛️ Панель управления")
 st.sidebar.markdown("---")
 
-# Фильтры
 st.sidebar.markdown("### 🔍 Фильтры данных")
 breeds = st.sidebar.multiselect(
     "Выберите породы:",
@@ -171,14 +166,14 @@ filtered_df = df[
     (df['Порода'].isin(breeds)) &
     (df['Возраст'] >= age_range[0]) &
     (df['Возраст'] <= age_range[1])
-    ].copy()
+].copy()
 
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     st.markdown("""
     <div class="metric-container">
-        <h3>📊 Всего</h3>
+        <h3>📊 Всего собак</h3>
         <h2>{}</h2>
     </div>
     """.format(len(filtered_df)), unsafe_allow_html=True)
@@ -187,7 +182,7 @@ with col2:
     healthy_pct = (filtered_df['Здоров'] == 'Да').sum() / len(filtered_df.dropna(subset=['Здоров'])) * 100
     st.markdown("""
     <div class="metric-container">
-        <h3>💚 Здоровых</h3>
+        <h3>💚 Здоровых собак</h3>
         <h2>{:.1f}%</h2>
     </div>
     """.format(healthy_pct), unsafe_allow_html=True)
@@ -211,7 +206,7 @@ with col4:
     """.format(avg_weight), unsafe_allow_html=True)
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs(
-    ["📊 Исследовательский анализ", "🎯 Модели МО", "🔮 Прогнозы", "📈 Интерактивные графики", "🎛️ Исследователь данных"])
+    ["📊 Исследовательский анализ", "🎯 Модели машинного обучения", "🔮 Прогнозы здоровья", "📈 Интерактивные графики", "🎛️ Исследователь данных"])
 
 with tab1:
     st.markdown('<div class="section-header">📊 Исследовательский анализ данных</div>', unsafe_allow_html=True)
@@ -245,7 +240,7 @@ with tab1:
             fig = px.pie(
                 values=size_counts.values,
                 names=size_counts.index,
-                title="🐕 Распределение по размерам",
+                title="🐕 Распределение по размерам породы",
                 color_discrete_sequence=px.colors.qualitative.Set3
             )
             fig.update_traces(textposition='inside', textinfo='percent+label')
@@ -262,7 +257,7 @@ with tab1:
                 y=activity_health.index,
                 x='Да',
                 orientation='h',
-                title="🏃 Уровень активности vs Процент здоровых",
+                title="🏃 Уровень активности и процент здоровых собак",
                 color='Да',
                 color_continuous_scale="Viridis"
             )
@@ -270,17 +265,22 @@ with tab1:
             st.plotly_chart(fig, use_container_width=True)
 
     with col4:
-        fig = px.scatter(
-            filtered_df.dropna(subset=['Возраст', 'Вес (кг)']),
-            x='Возраст',
-            y='Вес (кг)',
-            color='Здоров',
-            size='Посещений ветеринара в год',
-            title="📈 Возраст vs Вес по статусу здоровья",
-            color_discrete_map={'Да': '#2E8B57', 'Нет': '#DC143C'}
-        )
-        fig.update_layout(height=400)
-        st.plotly_chart(fig, use_container_width=True)
+        scatter_df = filtered_df.dropna(subset=['Возраст', 'Вес (кг)', 'Посещений ветеринара в год'])
+        scatter_df = scatter_df[scatter_df['Посещений ветеринара в год'] >= 0]
+        if not scatter_df.empty:
+            fig = px.scatter(
+                scatter_df,
+                x='Возраст',
+                y='Вес (кг)',
+                color='Здоров',
+                size='Посещений ветеринара в год',
+                title="📈 Возраст и вес по статусу здоровья",
+                color_discrete_map={'Да': '#2E8B57', 'Нет': '#DC143C'}
+            )
+            fig.update_layout(height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("Нет данных для построения диаграммы рассеяния из-за отсутствия полных данных.")
 
 with tab2:
     st.markdown('<div class="section-header">🎯 Модели машинного обучения</div>', unsafe_allow_html=True)
@@ -299,11 +299,7 @@ with tab2:
 
         X_columns = [col + '_encoded' for col in feature_columns if col in ml_df.columns] + ['Возраст', 'Вес (кг)',
                                                                                              'Посещений ветеринара в год']
-        X_columns = [col for col in X_columns if col in ml_df.columns or col.replace('_encoded', '') in ml_df.columns]
-
-        X = ml_df[['Возраст', 'Вес (кг)', 'Посещений ветеринара в год'] + [col + '_encoded' for col in feature_columns if
-                                                                  col in ml_df.columns]].fillna(
-            ml_df[['Возраст', 'Вес (кг)', 'Посещений ветеринара в год']].mean())
+        X = ml_df[X_columns].fillna(ml_df[['Возраст', 'Вес (кг)', 'Посещений ветеринара в год']].mean())
         y = (ml_df['Здоров'] == 'Да').astype(int)
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
@@ -318,7 +314,7 @@ with tab2:
             rf_pred = rf_model.predict(X_test)
             rf_accuracy = accuracy_score(y_test, rf_pred)
 
-            st.metric("Точность", f"{rf_accuracy:.3f}")
+            st.metric("Точность модели", f"{rf_accuracy:.3f}")
 
             importance_df = pd.DataFrame({
                 'Признак': X.columns,
@@ -330,7 +326,7 @@ with tab2:
                 x='Важность',
                 y='Признак',
                 orientation='h',
-                title="Важность признаков (Случайный лес)",
+                title="Важность признаков в модели случайного леса",
                 color='Важность',
                 color_continuous_scale="Blues"
             )
@@ -344,15 +340,15 @@ with tab2:
             lr_pred = lr_model.predict(X_test)
             lr_accuracy = accuracy_score(y_test, lr_pred)
 
-            st.metric("Точность", f"{lr_accuracy:.3f}")
+            st.metric("Точность модели", f"{lr_accuracy:.3f}")
 
             cm = confusion_matrix(y_test, lr_pred)
             fig = px.imshow(
                 cm,
                 text_auto=True,
-                title="Матрица ошибок (Логистическая регрессия)",
+                title="Матрица ошибок логистической регрессии",
                 color_continuous_scale="Blues",
-                labels=dict(x="Предсказано", y="Фактически")
+                labels=dict(x="Предсказанный класс", y="Фактический класс")
             )
             st.plotly_chart(fig, use_container_width=True)
 
@@ -374,7 +370,7 @@ with tab2:
         fig.update_traces(texttemplate='%{text:.3f}', textposition='outside')
         st.plotly_chart(fig, use_container_width=True)
     else:
-        st.warning("Недостаточно данных для обучения модели. Пожалуйста, расширьте фильтры.")
+        st.warning("Недостаточно данных для обучения моделей. Пожалуйста, расширьте фильтры.")
 
 with tab3:
     st.markdown('<div class="section-header">🔮 Инструмент прогнозирования здоровья</div>', unsafe_allow_html=True)
@@ -385,16 +381,14 @@ with tab3:
         with col1:
             st.markdown("#### Введите данные о собаке:")
 
-            pred_breed = st.selectbox("Порода:", options=df['Порода'].unique())
-            pred_size = st.selectbox("Размер:", options=['Маленький', 'Средний', 'Крупный'])
-            pred_sex = st.selectbox("Пол:", options=['Самец', 'Самка'])
+            pred_breed = st.selectbox("Порода собаки:", options=df['Порода'].unique())
+            pred_size = st.selectbox("Размер породы:", options=df['Размер породы'].unique())
+            pred_sex = st.selectbox("Пол собаки:", options=df['Пол'].unique())
             pred_age = st.slider("Возраст (лет):", min_value=1, max_value=18, value=5)
             pred_weight = st.slider("Вес (кг):", min_value=2, max_value=70, value=23)
-            pred_activity = st.selectbox("Уровень активности:",
-                                         options=['Отсутствует', 'Низкая', 'Умеренная', 'Активная', 'Очень активная'])
-            pred_diet = st.selectbox("Диета:",
-                                     options=['Сухой корм', 'Влажный корм', 'Домашняя еда', 'Специальная диета', 'Сырая диета'])
-            pred_spay = st.selectbox("Статус кастрации:", options=['Не кастрирован', 'Кастрирован', 'Стерилизована'])
+            pred_activity = st.selectbox("Уровень активности:", options=df['Уровень активности'].unique())
+            pred_diet = st.selectbox("Тип диеты:", options=df['Диета'].unique())
+            pred_spay = st.selectbox("Статус кастрации:", options=df['Статус кастрации'].unique())
             pred_vet = st.slider("Посещений ветеринара в год:", min_value=0, max_value=5, value=1)
 
         with col2:
@@ -476,36 +470,44 @@ with tab4:
         y_axis = st.selectbox("Выберите ось Y:", ['Вес (кг)', 'Возраст', 'Посещений ветеринара в год'])
 
     with col2:
-        color_by = st.selectbox("Цвет по:", ['Здоров', 'Порода', 'Пол', 'Уровень активности'])
+        color_by = st.selectbox("Цвет по параметру:", ['Здоров', 'Порода', 'Пол', 'Уровень активности'])
         chart_type = st.selectbox("Тип графика:", ['Диаграмма рассеяния', 'Диаграмма размаха', 'Скрипичная диаграмма'])
 
     if chart_type == 'Диаграмма рассеяния':
-        fig = px.scatter(
-            filtered_df.dropna(subset=[x_axis, y_axis]),
-            x=x_axis,
-            y=y_axis,
-            color=color_by,
-            size='Посещений ветеринара в год',
-            hover_data=['Порода', 'Возраст'],
-            title=f"{x_axis} vs {y_axis} с цветом по {color_by}"
-        )
-    elif chart_type == 'Ящичная диаграмма':
+        scatter_df = filtered_df.dropna(subset=[x_axis, y_axis, 'Посещений ветеринара в год'])
+        scatter_df = scatter_df[scatter_df['Посещений ветеринара в год'] >= 0]
+        if not scatter_df.empty:
+            fig = px.scatter(
+                scatter_df,
+                x=x_axis,
+                y=y_axis,
+                color=color_by,
+                size='Посещений ветеринара в год',
+                hover_data=['Порода', 'Возраст'],
+                title=f"{x_axis} против {y_axis} с цветом по {color_by.lower()}"
+            )
+            fig.update_layout(height=500)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("Нет данных для построения диаграммы рассеяния из-за отсутствия полных данных.")
+    elif chart_type == 'Диаграмма размаха':
         fig = px.box(
             filtered_df.dropna(subset=[y_axis]),
             x=color_by,
             y=y_axis,
-            title=f"Распределение {y_axis} по {color_by}"
+            title=f"Распределение {y_axis.lower()} по {color_by.lower()}"
         )
+        fig.update_layout(height=500)
+        st.plotly_chart(fig, use_container_width=True)
     else:
         fig = px.violin(
             filtered_df.dropna(subset=[y_axis]),
             x=color_by,
             y=y_axis,
-            title=f"Распределение {y_axis} по {color_by}"
+            title=f"Распределение {y_axis.lower()} по {color_by.lower()}"
         )
-
-    fig.update_layout(height=500)
-    st.plotly_chart(fig, use_container_width=True)
+        fig.update_layout(height=500)
+        st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("### 🔗 Матрица корреляции")
     numeric_cols = ['Возраст', 'Вес (кг)', 'Посещений ветеринара в год']
@@ -516,14 +518,14 @@ with tab4:
         text_auto=True,
         aspect="auto",
         title="Матрица корреляции числовых признаков",
-        color_continuous_scale="RdBu"
+        color_continuous_scale="RdBu",
+        labels=dict(x="Признаки", y="Признаки")
     )
     st.plotly_chart(fig, use_container_width=True)
 
 with tab5:
     st.markdown('<div class="section-header">🎛️ Интерактивный исследователь данных</div>', unsafe_allow_html=True)
 
-    # Опции фильтрации данных
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -535,7 +537,7 @@ with tab5:
 
     with col2:
         sex_filter = st.multiselect(
-            "Пол:",
+            "Пол собаки:",
             options=df['Пол'].unique(),
             default=df['Пол'].unique()
         )
@@ -547,26 +549,22 @@ with tab5:
             default=df['Уровень активности'].unique()
         )
 
-    # Применение фильтров
     explore_df = filtered_df[
         (filtered_df['Здоров'].isin(health_filter + [None])) &
         (filtered_df['Пол'].isin(sex_filter)) &
         (filtered_df['Уровень активности'].isin(activity_filter))
-        ]
+    ]
 
-    # Показать отфильтрованные данные
     st.markdown(f"### 📋 Отфильтрованный набор данных ({len(explore_df)} строк)")
 
-    # Добавить кнопку загрузки
     csv = explore_df.to_csv(index=False)
     st.download_button(
-        label="📥 Скачать отфильтрованные данные как CSV",
+        label="📥 Скачать данные как CSV",
         data=csv,
         file_name='отфильтрованные_данные_собак.csv',
         mime='text/csv',
     )
 
-    # Отображение данных с пагинацией
     page_size = st.slider("Строк на странице:", min_value=10, max_value=100, value=20)
 
     if len(explore_df) > 0:
